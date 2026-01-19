@@ -20,7 +20,7 @@ export default function MapLibrePickerClient({
     if (!mapRef.current || mapRefInstance.current) return;
 
     const initializeMap = (lng: number, lat: number) => {
-      // 1️⃣ Create map
+      
       mapRefInstance.current = new maplibregl.Map({
         container: mapRef.current!,
         style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
@@ -28,7 +28,7 @@ export default function MapLibrePickerClient({
         zoom: 16,
       });
 
-      // 2️⃣ Add search (Nominatim)
+      
       const geocoder = new MaplibreGeocoder(
         {
           forwardGeocode: async (config) => {
@@ -66,7 +66,7 @@ export default function MapLibrePickerClient({
 
       mapRefInstance.current.addControl(geocoder, "top-left");
 
-      // 🔥 Force zoom & pan when search result is selected
+      
             geocoder.on("result", (e) => {
               const geom = e.result.geometry;
               if (!geom) return;
@@ -93,13 +93,13 @@ export default function MapLibrePickerClient({
               }
             });
 
-      // 3️⃣ Map controls
+      
       mapRefInstance.current.addControl(
         new maplibregl.NavigationControl(),
         "top-right"
       );
 
-      // 4️⃣ Click to place marker
+      
       mapRefInstance.current.on("click", (e) => {
         const { lng, lat } = e.lngLat;
 
@@ -115,7 +115,7 @@ export default function MapLibrePickerClient({
       });
     };
 
-    // 5️⃣ Try to center on user location
+    
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         initializeMap(pos.coords.longitude, pos.coords.latitude);

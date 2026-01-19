@@ -2,92 +2,113 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../../lib/supabase";
 
 import { CATEGORIES } from "../../lib/categories";
 import MapLibrePicker from "../../components/MapLibrePicker";
 
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-// ---------------- TYPES ----------------
 type CategoryGroup = keyof typeof CATEGORIES;
+type Severity = "LOW" | "MEDIUM" | "HIGH";
 
-// ---------------- PAGE ----------------
 export default function ReportPage() {
   const router = useRouter();
 
-  // ----- CATEGORY -----
+  
   const [group, setGroup] = useState<CategoryGroup | "">("");
-  const [category, setCategory] = useState<string>("");
-  const [subCategory, setSubCategory] = useState<string>("");
-
-  // ----- FORM -----
+  const [category, setCategory] = useState("");
+  const [subCategory, setSubCategory] = useState("");
+  
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [severity, setSeverity] = useState<"LOW" | "MEDIUM" | "HIGH">("MEDIUM");
+  const [severity, setSeverity] = useState<Severity>("MEDIUM");
   const [urgent, setUrgent] = useState(false);
 
-  // ----- LOCATION -----
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
-
-  // ----- IMAGE -----
+  
   const [image, setImage] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  
+  const uploadImage = async (file: File, userId: string) => {
+    const ext = file.name.split(".").pop();
+    const filePath = `${userId}/${crypto.randomUUID()}.${ext}`;
 
-  // ----- SUBMIT -----
+    const { error } = await supabase.storage
+      .from("reports")
+      .upload(filePath, file);
+
+    if (error) throw error;
+
+    const { data } = supabase.storage
+      .from("reports")
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  };
+
+  
   const submit = async () => {
     if (
       !group ||
       !category ||
       !subCategory ||
       !title ||
+      !image ||
       lat === null ||
-      lng === null ||
-      !image
+      lng === null
     ) {
-      alert("Please fill all required fields and select a location");
+      alert("Please fill all required fields");
       return;
     }
+
+    setLoading(true);
 
     const { data } = await supabase.auth.getUser();
     if (!data.user) {
-      alert("Not authenticated");
+      router.push("/");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("userId", data.user.id);
-    formData.append("title", title);
-    formData.append("description", description);
-    formData.append("categoryGroup", group);
-    formData.append("category", category);
-    formData.append("subCategory", subCategory);
-    formData.append("severity", severity);
-    formData.append("urgent", String(urgent));
-    formData.append("latitude", String(lat));
-    formData.append("longitude", String(lng));
-    formData.append("image", image);
+    try {
+      
+      const imageUrl = await uploadImage(image, data.user.id);
 
-    await fetch("http://localhost:8080/api/reports", {
-      method: "POST",
-      body: formData,
-    });
+      
+      await fetch("http://localhost:8080/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: data.user.id,
+          title,
+          description,
+          categoryGroup: group,
+          category,
+          subCategory,
+          severity,
+          urgent,
+          latitude: lat,
+          longitude: lng,
+          imageUrl,
+        }),
+      });
 
-    alert("Report submitted successfully");
-    router.push("/dashboard");
+      alert("Report submitted");
+      router.push("/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit report");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // ---------------- UI ----------------
+  
   return (
     <div className="min-h-screen bg-gray-100 flex justify-center p-6">
       <div className="bg-white w-full max-w-xl p-6 rounded-xl shadow">
-        <h1 className="text-2xl font-bold mb-4">Report an Issue</h1>
+        <h1 className="text-2xl font-bold mb-6">Report an Issue</h1>
 
-        {/* CATEGORY GROUP */}
+      
         <select
           className="w-full border p-2 mb-3"
           value={group}
@@ -105,7 +126,7 @@ export default function ReportPage() {
           ))}
         </select>
 
-        {/* CATEGORY */}
+    
         {group && (
           <select
             className="w-full border p-2 mb-3"
@@ -124,7 +145,7 @@ export default function ReportPage() {
           </select>
         )}
 
-        {/* SUB CATEGORY */}
+      
         {group && category && (
           <select
             className="w-full border p-2 mb-3"
@@ -132,17 +153,17 @@ export default function ReportPage() {
             onChange={(e) => setSubCategory(e.target.value)}
           >
             <option value="">Sub Category</option>
-            {(CATEGORIES[group][category as keyof typeof CATEGORIES[CategoryGroup]] as readonly string[]).map(
-             (sc) => (
-               <option key={sc} value={sc}>
-                 {sc}
-               </option>
-             )
-           )}
+            {(CATEGORIES[group][
+              category as keyof typeof CATEGORIES[CategoryGroup]
+            ] as readonly string[]).map((sc) => (
+              <option key={sc} value={sc}>
+                {sc}
+              </option>
+            ))}
           </select>
         )}
 
-        {/* TITLE */}
+    
         <input
           className="w-full border p-2 mb-3"
           placeholder="Issue title"
@@ -150,7 +171,7 @@ export default function ReportPage() {
           onChange={(e) => setTitle(e.target.value)}
         />
 
-        {/* DESCRIPTION */}
+    
         <textarea
           className="w-full border p-2 mb-3"
           placeholder="Description (optional)"
@@ -159,12 +180,12 @@ export default function ReportPage() {
           onChange={(e) => setDescription(e.target.value)}
         />
 
-        {/* SEVERITY */}
+        
         <select
           className="w-full border p-2 mb-3"
           value={severity}
           onChange={(e) =>
-            setSeverity(e.target.value as "LOW" | "MEDIUM" | "HIGH")
+            setSeverity(e.target.value as Severity)
           }
         >
           <option value="LOW">LOW</option>
@@ -172,7 +193,7 @@ export default function ReportPage() {
           <option value="HIGH">HIGH</option>
         </select>
 
-        {/* URGENT */}
+      
         <label className="flex items-center gap-2 mb-4">
           <input
             type="checkbox"
@@ -182,25 +203,23 @@ export default function ReportPage() {
           Mark as urgent
         </label>
 
-        {/* MAPLIBRE LOCATION PICKER */}
+        
         <div className="mb-4">
-          <p className="font-semibold mb-2">Select issue location</p>
-
+          <p className="font-semibold mb-2">Select location</p>
           <MapLibrePicker
-            onSelect={(latitude: number, longitude: number) => {
+            onSelect={(latitude, longitude) => {
               setLat(latitude);
               setLng(longitude);
             }}
           />
-
-          {lat !== null && lng !== null && (
-            <p className="text-sm mt-2 text-gray-600">
-              Selected: {lat.toFixed(5)}, {lng.toFixed(5)}
+          {lat && lng && (
+            <p className="text-sm text-gray-600 mt-2">
+              {lat.toFixed(5)}, {lng.toFixed(5)}
             </p>
           )}
         </div>
 
-        {/* IMAGE */}
+      
         <input
           type="file"
           accept="image/*"
@@ -208,12 +227,13 @@ export default function ReportPage() {
           onChange={(e) => setImage(e.target.files?.[0] || null)}
         />
 
-        {/* SUBMIT */}
+        
         <button
-          className="w-full bg-blue-600 text-white p-3 rounded font-semibold"
           onClick={submit}
+          disabled={loading}
+          className="w-full bg-blue-600 text-white p-3 rounded font-semibold disabled:opacity-50"
         >
-          Submit Report
+          {loading ? "Submitting..." : "Submit Report"}
         </button>
       </div>
     </div>
