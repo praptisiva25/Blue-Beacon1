@@ -8,22 +8,34 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        router.push('/dashboard')
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session) router.push('/dashboard')
       }
-    })
-  }, [])
+    )
+
+    return () => listener.subscription.unsubscribe()
+  }, [router])
 
   const loginWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({ provider: 'google' })
   }
 
   return (
-    <div className="h-screen flex items-center justify-center">
-      <button onClick={loginWithGoogle} className="bg-black text-white px-6 py-3 rounded">
-        Sign in with Google
-      </button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-700 to-blue-900 flex items-center justify-center text-white">
+      <div className="bg-white text-black p-10 rounded-xl shadow-xl w-full max-w-md text-center">
+        <h1 className="text-3xl font-bold mb-2">CivicConnect</h1>
+        <p className="text-gray-600 mb-6">
+          Report civic issues. Make your city better.
+        </p>
+
+        <button
+          onClick={loginWithGoogle}
+          className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800"
+        >
+          Sign in with Google
+        </button>
+      </div>
     </div>
   )
 }

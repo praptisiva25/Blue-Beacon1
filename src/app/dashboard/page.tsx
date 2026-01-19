@@ -46,17 +46,51 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-      <h1 className="text-2xl font-bold mb-4">
-        Welcome {email}
-      </h1>
+    <div className="min-h-screen bg-gray-100 p-8">
+      
+      {/* Header */}
+      <div className="flex justify-between items-center mb-10">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-gray-600">Logged in as {email}</p>
+        </div>
 
-      <button
-        onClick={handleLogout}
-        className="px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-      >
-        Logout
-      </button>
+        <button
+          onClick={handleLogout}
+          className="px-5 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+        >
+          Logout
+        </button>
+      </div>
+
+      {/* Action Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div
+          onClick={() => router.push("/report")}
+          className="cursor-pointer bg-blue-600 text-white p-6 rounded-xl shadow hover:bg-blue-700"
+        >
+          <h2 className="text-xl font-bold mb-2">➕ Report an Issue</h2>
+          <p>Upload photos and describe the problem</p>
+        </div>
+
+        <div 
+           onClick={() => router.push("/my-reports")}
+          className="cursor-pointer bg-blue-600 text-white p-6 rounded-xl shadow hover:bg-blue-700">
+          <h2 className="text-xl font-bold mb-2">📄 My Reports</h2>
+          <p className="text-gray-600">
+            View status of issues you reported
+          </p>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow">
+          <h2 className="text-xl font-bold mb-2">📊 City Impact</h2>
+          <p className="text-gray-600">
+            See resolved & pending issues
+          </p>
+        </div>
+
+      </div>
     </div>
   );
 }
