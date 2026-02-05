@@ -6,11 +6,12 @@ import { supabase } from '../../lib/supabase'
 
 export default function Dashboard() {
   const [email, setEmail] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
     const init = async () => {
-      // Get session (includes JWT)
+      
       const {
         data: { session },
       } = await supabase.auth.getSession()
@@ -20,19 +21,33 @@ export default function Dashboard() {
         return
       }
 
-      // Set UI email
       setEmail(session.user.email ?? null)
 
-      // Sync user with backend (JWT-based)
+      
       try {
-        await fetch('http://localhost:8080/api/auth/sync', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        })
+        const res = await fetch(
+          'http://localhost:8080/api/auth/sync',
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          }
+        )
+
+        const user = await res.json()
+
+        
+        if (user.role === 'AUTHORITY') {
+          router.replace('/authority-dashboard')
+          return
+        }
+
+      
+        setLoading(false)
       } catch (err) {
         console.error('Failed to sync user:', err)
+        router.replace('/')
       }
     }
 
@@ -44,6 +59,11 @@ export default function Dashboard() {
     router.replace('/')
   }
 
+  if (loading) {
+    return <p className="p-6">Loading...</p>
+  }
+
+  // ✅ EXISTING CITIZEN DASHBOARD (UNCHANGED)
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       {/* Header */}
@@ -67,7 +87,9 @@ export default function Dashboard() {
           onClick={() => router.push('/report')}
           className="cursor-pointer bg-blue-600 text-white p-6 rounded-xl shadow hover:bg-blue-700"
         >
-          <h2 className="text-xl font-bold mb-2">➕ Report an Issue</h2>
+          <h2 className="text-xl font-bold mb-2">
+            ➕ Report an Issue
+          </h2>
           <p>Upload photos and describe the problem</p>
         </div>
 
@@ -75,14 +97,18 @@ export default function Dashboard() {
           onClick={() => router.push('/my-reports')}
           className="cursor-pointer bg-blue-600 text-white p-6 rounded-xl shadow hover:bg-blue-700"
         >
-          <h2 className="text-xl font-bold mb-2">📄 My Reports</h2>
+          <h2 className="text-xl font-bold mb-2">
+            📄 My Reports
+          </h2>
           <p className="text-gray-200">
             View status of issues you reported
           </p>
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow">
-          <h2 className="text-xl font-bold mb-2">📊 City Impact</h2>
+          <h2 className="text-xl font-bold mb-2">
+            📊 City Impact
+          </h2>
           <p className="text-gray-600">
             See resolved & pending issues
           </p>

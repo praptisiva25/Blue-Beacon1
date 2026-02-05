@@ -13,13 +13,9 @@ type Severity = 'LOW' | 'MEDIUM' | 'HIGH'
 export default function ReportPage() {
   const router = useRouter()
 
-  const [group, setGroup] = useState<CategoryGroup | ''>('')
-  const [category, setCategory] = useState('')
-  const [subCategory, setSubCategory] = useState('')
-
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [severity, setSeverity] = useState<Severity>('MEDIUM')
+
   const [urgent, setUrgent] = useState(false)
 
   const [lat, setLat] = useState<number | null>(null)
@@ -48,9 +44,7 @@ export default function ReportPage() {
 
   const submit = async () => {
     if (
-      !group ||
-      !category ||
-      !subCategory ||
+  
       !title ||
       !image ||
       lat === null ||
@@ -62,7 +56,7 @@ export default function ReportPage() {
 
     setLoading(true)
 
-    // ✅ Get session (JWT included)
+    
     const {
       data: { session },
     } = await supabase.auth.getSession()
@@ -86,10 +80,6 @@ export default function ReportPage() {
         body: JSON.stringify({
           title,
           description,
-          categoryGroup: group,
-          category,
-          subCategory,
-          severity,
           urgent,
           latitude: lat,
           longitude: lng,
@@ -112,60 +102,6 @@ export default function ReportPage() {
       <div className="bg-white w-full max-w-xl p-6 rounded-xl shadow">
         <h1 className="text-2xl font-bold mb-6">Report an Issue</h1>
 
-        {/* Category Group */}
-        <select
-          className="w-full border p-2 mb-3"
-          value={group}
-          onChange={(e) => {
-            setGroup(e.target.value as CategoryGroup)
-            setCategory('')
-            setSubCategory('')
-          }}
-        >
-          <option value="">Category Group</option>
-          {Object.keys(CATEGORIES).map((g) => (
-            <option key={g} value={g}>
-              {g}
-            </option>
-          ))}
-        </select>
-
-        {/* Category */}
-        {group && (
-          <select
-            className="w-full border p-2 mb-3"
-            value={category}
-            onChange={(e) => {
-              setCategory(e.target.value)
-              setSubCategory('')
-            }}
-          >
-            <option value="">Category</option>
-            {Object.keys(CATEGORIES[group]).map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        )}
-
-        {/* Sub Category */}
-        {group && category && (
-          <select
-            className="w-full border p-2 mb-3"
-            value={subCategory}
-            onChange={(e) => setSubCategory(e.target.value)}
-          >
-            <option value="">Sub Category</option>
-            {(CATEGORIES[group][
-              category as keyof typeof CATEGORIES[CategoryGroup]
-            ] as readonly string[]).map((sc) => (
-              <option key={sc} value={sc}>
-                {sc}
-              </option>
-            ))}
-          </select>
-        )}
 
         <input
           className="w-full border p-2 mb-3"
@@ -182,15 +118,7 @@ export default function ReportPage() {
           onChange={(e) => setDescription(e.target.value)}
         />
 
-        <select
-          className="w-full border p-2 mb-3"
-          value={severity}
-          onChange={(e) => setSeverity(e.target.value as Severity)}
-        >
-          <option value="LOW">LOW</option>
-          <option value="MEDIUM">MEDIUM</option>
-          <option value="HIGH">HIGH</option>
-        </select>
+        
 
         <label className="flex items-center gap-2 mb-4">
           <input
@@ -234,4 +162,3 @@ export default function ReportPage() {
     </div>
   )
 }
-  

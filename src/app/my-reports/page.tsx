@@ -7,10 +7,6 @@ import { supabase } from '../../lib/supabase'
 type Report = {
   id: string
   title: string
-  categoryGroup: string
-  category: string
-  subCategory: string
-  severity: string
   urgent: boolean
   createdAt: string
 }
@@ -20,7 +16,7 @@ export default function MyReportsPage() {
   const router = useRouter()
 
   const loadReports = async () => {
-    // ✅ Get session (JWT)
+
     const {
       data: { session },
     } = await supabase.auth.getSession()
@@ -95,11 +91,8 @@ export default function MyReportsPage() {
           >
             <div>
               <h2 className="font-semibold">{r.title}</h2>
-              <p className="text-sm text-gray-600">
-                {r.categoryGroup} → {r.category} → {r.subCategory}
-              </p>
+              
               <p className="text-sm">
-                Severity: {r.severity}
                 {r.urgent && ' • URGENT'}
               </p>
               <p className="text-xs text-gray-400">
