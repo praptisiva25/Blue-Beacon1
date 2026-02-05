@@ -1,48 +1,51 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "../../lib/supabase";
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '../../lib/supabase'
 
 export default function Dashboard() {
-  const [email, setEmail] = useState<string | null>(null);
-  const router = useRouter();
+  const [email, setEmail] = useState<string | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
-    const getUserAndSync = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+    const init = async () => {
+      // Get session (includes JWT)
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
 
-      if (!user) {
-        router.push("/");
-        return;
+      if (!session) {
+        router.replace('/')
+        return
       }
 
-      setEmail(user.email || null);
+      // Set UI email
+      setEmail(session.user.email ?? null)
 
+      // Sync user with backend (JWT-based)
       try {
-        await fetch("http://localhost:8080/api/auth/sync", {
-          method: "POST",
+        await fetch('http://localhost:8080/api/auth/sync', {
+          method: 'POST',
           headers: {
-            "X-User-Email": user.email!,
-            "X-User-Id": user.id,
+            Authorization: `Bearer ${session.access_token}`,
           },
-        });
+        })
       } catch (err) {
-        console.error("Failed to sync user:", err);
+        console.error('Failed to sync user:', err)
       }
-    };
+    }
 
-    getUserAndSync();
-  }, [router]);
+    init()
+  }, [router])
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
-  };
+    await supabase.auth.signOut()
+    router.replace('/')
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
-      
       {/* Header */}
       <div className="flex justify-between items-center mb-10">
         <div>
@@ -60,20 +63,20 @@ export default function Dashboard() {
 
       {/* Action Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
         <div
-          onClick={() => router.push("/report")}
+          onClick={() => router.push('/report')}
           className="cursor-pointer bg-blue-600 text-white p-6 rounded-xl shadow hover:bg-blue-700"
         >
           <h2 className="text-xl font-bold mb-2">➕ Report an Issue</h2>
           <p>Upload photos and describe the problem</p>
         </div>
 
-        <div 
-           onClick={() => router.push("/my-reports")}
-          className="cursor-pointer bg-blue-600 text-white p-6 rounded-xl shadow hover:bg-blue-700">
+        <div
+          onClick={() => router.push('/my-reports')}
+          className="cursor-pointer bg-blue-600 text-white p-6 rounded-xl shadow hover:bg-blue-700"
+        >
           <h2 className="text-xl font-bold mb-2">📄 My Reports</h2>
-          <p className="text-gray-600">
+          <p className="text-gray-200">
             View status of issues you reported
           </p>
         </div>
@@ -84,8 +87,7 @@ export default function Dashboard() {
             See resolved & pending issues
           </p>
         </div>
-
       </div>
     </div>
-  );
+  )
 }

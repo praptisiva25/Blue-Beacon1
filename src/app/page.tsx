@@ -8,17 +8,27 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (session) router.push('/dashboard')
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        router.replace('/dashboard')
       }
-    )
+    })
 
-    return () => listener.subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [router])
 
   const loginWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({ provider: 'google' })
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+    })
+
+    if (error) {
+      console.error('Login error:', error.message)
+    }
   }
 
   return (
@@ -31,7 +41,7 @@ export default function Home() {
 
         <button
           onClick={loginWithGoogle}
-          className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800"
+          className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition"
         >
           Sign in with Google
         </button>

@@ -1,49 +1,83 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabase";
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '../../lib/supabase'
 
 type Report = {
-  id: string;
-  title: string;
-  categoryGroup: string;
-  category: string;
-  subCategory: string;
-  severity: string;
-  urgent: boolean;
-  createdAt: string;
-};
+  id: string
+  title: string
+  categoryGroup: string
+  category: string
+  subCategory: string
+  severity: string
+  urgent: boolean
+  createdAt: string
+}
 
 export default function MyReportsPage() {
-  const [reports, setReports] = useState<Report[]>([]);
+  const [reports, setReports] = useState<Report[]>([])
+  const router = useRouter()
 
   const loadReports = async () => {
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) return;
+    // ✅ Get session (JWT)
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
 
-    const res = await fetch("http://localhost:8080/api/reports/my", {
+    if (!session) {
+      router.replace('/')
+      return
+    }
+
+    const res = await fetch('http://localhost:8080/api/reports/my', {
       headers: {
-        "X-User-Id": data.user.id,
+        Authorization: `Bearer ${session.access_token}`,
       },
-    });
+    })
 
-    const json = await res.json();
-    setReports(json);
-  };
+    if (!res.ok) {
+      console.error('Failed to fetch reports')
+      return
+    }
+
+    const json = await res.json()
+    setReports(json)
+  }
 
   const deleteReport = async (id: string) => {
-    if (!confirm("Delete this report?")) return;
+    if (!confirm('Delete this report?')) return
 
-    await fetch(`http://localhost:8080/api/reports/${id}`, {
-      method: "DELETE",
-    });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
 
-    setReports((prev) => prev.filter((r) => r.id !== id));
-  };
+    if (!session) {
+      router.replace('/')
+      return
+    }
+
+    const res = await fetch(
+      `http://localhost:8080/api/reports/${id}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      }
+    )
+
+    if (!res.ok) {
+      alert('Failed to delete report')
+      return
+    }
+
+    setReports((prev) => prev.filter((r) => r.id !== id))
+  }
 
   useEffect(() => {
-    loadReports();
-  }, []);
+    loadReports()
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -66,7 +100,7 @@ export default function MyReportsPage() {
               </p>
               <p className="text-sm">
                 Severity: {r.severity}
-                {r.urgent && " • URGENT"}
+                {r.urgent && ' • URGENT'}
               </p>
               <p className="text-xs text-gray-400">
                 {new Date(r.createdAt).toLocaleString()}
@@ -83,5 +117,5 @@ export default function MyReportsPage() {
         ))}
       </div>
     </div>
-  );
+  )
 }

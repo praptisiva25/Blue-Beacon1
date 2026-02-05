@@ -1,52 +1,51 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "../../lib/supabase";
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '../../lib/supabase'
 
-import { CATEGORIES } from "../../lib/categories";
-import MapLibrePicker from "../../components/MapLibrePicker";
+import { CATEGORIES } from '../../lib/categories'
+import MapLibrePicker from '../../components/MapLibrePicker'
 
-type CategoryGroup = keyof typeof CATEGORIES;
-type Severity = "LOW" | "MEDIUM" | "HIGH";
+type CategoryGroup = keyof typeof CATEGORIES
+type Severity = 'LOW' | 'MEDIUM' | 'HIGH'
 
 export default function ReportPage() {
-  const router = useRouter();
+  const router = useRouter()
 
-  
-  const [group, setGroup] = useState<CategoryGroup | "">("");
-  const [category, setCategory] = useState("");
-  const [subCategory, setSubCategory] = useState("");
-  
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [severity, setSeverity] = useState<Severity>("MEDIUM");
-  const [urgent, setUrgent] = useState(false);
+  const [group, setGroup] = useState<CategoryGroup | ''>('')
+  const [category, setCategory] = useState('')
+  const [subCategory, setSubCategory] = useState('')
 
-  const [lat, setLat] = useState<number | null>(null);
-  const [lng, setLng] = useState<number | null>(null);
-  
-  const [image, setImage] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
-  
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [severity, setSeverity] = useState<Severity>('MEDIUM')
+  const [urgent, setUrgent] = useState(false)
+
+  const [lat, setLat] = useState<number | null>(null)
+  const [lng, setLng] = useState<number | null>(null)
+
+  const [image, setImage] = useState<File | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  // Upload image to Supabase Storage
   const uploadImage = async (file: File, userId: string) => {
-    const ext = file.name.split(".").pop();
-    const filePath = `${userId}/${crypto.randomUUID()}.${ext}`;
+    const ext = file.name.split('.').pop()
+    const filePath = `${userId}/${crypto.randomUUID()}.${ext}`
 
     const { error } = await supabase.storage
-      .from("reports")
-      .upload(filePath, file);
+      .from('reports')
+      .upload(filePath, file)
 
-    if (error) throw error;
+    if (error) throw error
 
     const { data } = supabase.storage
-      .from("reports")
-      .getPublicUrl(filePath);
+      .from('reports')
+      .getPublicUrl(filePath)
 
-    return data.publicUrl;
-  };
+    return data.publicUrl
+  }
 
-  
   const submit = async () => {
     if (
       !group ||
@@ -57,28 +56,34 @@ export default function ReportPage() {
       lat === null ||
       lng === null
     ) {
-      alert("Please fill all required fields");
-      return;
+      alert('Please fill all required fields')
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
 
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) {
-      router.push("/");
-      return;
+    // ✅ Get session (JWT included)
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      router.replace('/')
+      return
     }
 
     try {
-      
-      const imageUrl = await uploadImage(image, data.user.id);
+      // Upload image
+      const imageUrl = await uploadImage(image, session.user.id)
 
-      
-      await fetch("http://localhost:8080/api/reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      // Send report to backend (JWT auth)
+      await fetch('http://localhost:8080/api/reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
-          userId: data.user.id,
           title,
           description,
           categoryGroup: group,
@@ -90,32 +95,31 @@ export default function ReportPage() {
           longitude: lng,
           imageUrl,
         }),
-      });
+      })
 
-      alert("Report submitted");
-      router.push("/dashboard");
+      alert('Report submitted')
+      router.push('/dashboard')
     } catch (err) {
-      console.error(err);
-      alert("Failed to submit report");
+      console.error(err)
+      alert('Failed to submit report')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  
   return (
     <div className="min-h-screen bg-gray-100 flex justify-center p-6">
       <div className="bg-white w-full max-w-xl p-6 rounded-xl shadow">
         <h1 className="text-2xl font-bold mb-6">Report an Issue</h1>
 
-      
+        {/* Category Group */}
         <select
           className="w-full border p-2 mb-3"
           value={group}
           onChange={(e) => {
-            setGroup(e.target.value as CategoryGroup);
-            setCategory("");
-            setSubCategory("");
+            setGroup(e.target.value as CategoryGroup)
+            setCategory('')
+            setSubCategory('')
           }}
         >
           <option value="">Category Group</option>
@@ -126,14 +130,14 @@ export default function ReportPage() {
           ))}
         </select>
 
-    
+        {/* Category */}
         {group && (
           <select
             className="w-full border p-2 mb-3"
             value={category}
             onChange={(e) => {
-              setCategory(e.target.value);
-              setSubCategory("");
+              setCategory(e.target.value)
+              setSubCategory('')
             }}
           >
             <option value="">Category</option>
@@ -145,7 +149,7 @@ export default function ReportPage() {
           </select>
         )}
 
-      
+        {/* Sub Category */}
         {group && category && (
           <select
             className="w-full border p-2 mb-3"
@@ -163,7 +167,6 @@ export default function ReportPage() {
           </select>
         )}
 
-    
         <input
           className="w-full border p-2 mb-3"
           placeholder="Issue title"
@@ -171,7 +174,6 @@ export default function ReportPage() {
           onChange={(e) => setTitle(e.target.value)}
         />
 
-    
         <textarea
           className="w-full border p-2 mb-3"
           placeholder="Description (optional)"
@@ -180,20 +182,16 @@ export default function ReportPage() {
           onChange={(e) => setDescription(e.target.value)}
         />
 
-        
         <select
           className="w-full border p-2 mb-3"
           value={severity}
-          onChange={(e) =>
-            setSeverity(e.target.value as Severity)
-          }
+          onChange={(e) => setSeverity(e.target.value as Severity)}
         >
           <option value="LOW">LOW</option>
           <option value="MEDIUM">MEDIUM</option>
           <option value="HIGH">HIGH</option>
         </select>
 
-      
         <label className="flex items-center gap-2 mb-4">
           <input
             type="checkbox"
@@ -203,13 +201,12 @@ export default function ReportPage() {
           Mark as urgent
         </label>
 
-        
         <div className="mb-4">
           <p className="font-semibold mb-2">Select location</p>
           <MapLibrePicker
             onSelect={(latitude, longitude) => {
-              setLat(latitude);
-              setLng(longitude);
+              setLat(latitude)
+              setLng(longitude)
             }}
           />
           {lat && lng && (
@@ -219,7 +216,6 @@ export default function ReportPage() {
           )}
         </div>
 
-      
         <input
           type="file"
           accept="image/*"
@@ -227,15 +223,15 @@ export default function ReportPage() {
           onChange={(e) => setImage(e.target.files?.[0] || null)}
         />
 
-        
         <button
           onClick={submit}
           disabled={loading}
           className="w-full bg-blue-600 text-white p-3 rounded font-semibold disabled:opacity-50"
         >
-          {loading ? "Submitting..." : "Submit Report"}
+          {loading ? 'Submitting...' : 'Submit Report'}
         </button>
       </div>
     </div>
-  );
+  )
 }
+  
