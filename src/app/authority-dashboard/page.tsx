@@ -12,9 +12,12 @@ export default function AuthorityDashboard() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Authority Dashboard</h1>
+    <div className="min-h-screen bg-gray-100 p-6">
+      
+      <div className="flex justify-between items-center mb-10">
+        <h1 className="text-2xl font-bold">
+          Authority Dashboard
+        </h1>
 
         <button
           onClick={handleLogout}
@@ -24,7 +27,20 @@ export default function AuthorityDashboard() {
         </button>
       </div>
 
-      {/* Authority content goes here */}
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <button
+          onClick={() => router.push('/authority/reports')}
+          className="bg-blue-600 text-white p-6 rounded-xl shadow hover:bg-blue-700 text-left"
+        >
+          <h2 className="text-xl font-bold mb-2">
+            📄 Assigned Reports
+          </h2>
+          <p className="text-blue-100">
+            View and manage reports assigned to you
+          </p>
+        </button>
+      </div>
     </div>
   )
 }

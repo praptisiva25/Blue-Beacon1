@@ -4,11 +4,9 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 
-import { CATEGORIES } from '../../lib/categories'
+
 import MapLibrePicker from '../../components/MapLibrePicker'
 
-type CategoryGroup = keyof typeof CATEGORIES
-type Severity = 'LOW' | 'MEDIUM' | 'HIGH'
 
 export default function ReportPage() {
   const router = useRouter()
