@@ -13,10 +13,10 @@ type Report = {
 
 export default function MyReportsPage() {
   const [reports, setReports] = useState<Report[]>([])
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   const loadReports = async () => {
-
     const {
       data: { session },
     } = await supabase.auth.getSession()
@@ -26,54 +26,37 @@ export default function MyReportsPage() {
       return
     }
 
-    const res = await fetch('http://localhost:8080/api/reports/my', {
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    })
+    try {
+      const res = await fetch(
+        'http://localhost:8080/api/citizen/reports/my',
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      )
 
-    if (!res.ok) {
-      console.error('Failed to fetch reports')
-      return
-    }
-
-    const json = await res.json()
-    setReports(json)
-  }
-
-  const deleteReport = async (id: string) => {
-    if (!confirm('Delete this report?')) return
-
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    if (!session) {
-      router.replace('/')
-      return
-    }
-
-    const res = await fetch(
-      `http://localhost:8080/api/reports/${id}`,
-      {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+      if (!res.ok) {
+        throw new Error('Failed to fetch reports')
       }
-    )
 
-    if (!res.ok) {
-      alert('Failed to delete report')
-      return
+      const data = await res.json()
+      setReports(data)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
     }
-
-    setReports((prev) => prev.filter((r) => r.id !== id))
   }
 
   useEffect(() => {
     loadReports()
   }, [])
+
+  if (loading) {
+    return <p className="p-6">Loading reports...</p>
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -87,25 +70,19 @@ export default function MyReportsPage() {
         {reports.map((r) => (
           <div
             key={r.id}
-            className="bg-white p-4 rounded shadow flex justify-between"
+            className="bg-white p-4 rounded shadow"
           >
-            <div>
-              <h2 className="font-semibold">{r.title}</h2>
-              
-              <p className="text-sm">
-                {r.urgent && ' • URGENT'}
-              </p>
-              <p className="text-xs text-gray-400">
-                {new Date(r.createdAt).toLocaleString()}
-              </p>
-            </div>
+            <h2 className="font-semibold">{r.title}</h2>
 
-            <button
-              className="text-red-600 hover:underline"
-              onClick={() => deleteReport(r.id)}
-            >
-              Delete
-            </button>
+            {r.urgent && (
+              <p className="text-sm text-red-600 font-medium">
+                URGENT
+              </p>
+            )}
+
+            <p className="text-xs text-gray-400">
+              {new Date(r.createdAt).toLocaleString()}
+            </p>
           </div>
         ))}
       </div>
